@@ -1,0 +1,68 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+build/
+.next/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test coverage
+coverage/
+
+# Claude Code — config locale uniquement
+# .claude/ et CLAUDE.md sont VOLONTAIREMENT versionnes (partages en equipe).
+# Voir CONTRIBUTING.md : "Versionner .claude/ et CLAUDE.md dans git".
+CLAUDE.local.md
+.claude/settings.local.json
+.mcp.env
+
+# Terraform artifacts in templates
+.claude/templates/**/.terraform/
+.claude/templates/**/*.tfstate
+.claude/templates/**/*.tfstate.backup
+
+# Docusaurus
+website/node_modules/
+website/build/
+website/.docusaurus/
+website/.cache-loader/
+website/pdf/
+# Auto-generated catalog mirrors — regenerated from .claude/ by `npm run generate`
+# at CI/deploy time. Not committed: they churned on every catalog change (dozens
+# of files per PR) and drifted (stale orphan pages). The AUTHORED website docs
+# (intro/concepts/examples/tutorials/workflow/guides incl. learning-path/reference)
+# stay committed. counts.json + source-doc markers remain under the counts gate.
+website/docs/agents/
+website/docs/commands/
+website/docs/skills/
+website/docs/rules/
+# Build-time dependency tree of the docs site — never shipped to users; kept out
+# of the repo so Dependabot doesn't scan it (npm install resolves at build time).
+website/package-lock.json
+
+# Installers locaux
+*.deb
+.claude/scheduled_tasks.lock
+
+# Curation engine runtime state (written by the nightly watch; per-machine, not
+# committed — running the watch locally must not dirty the tree).
+.claude/curation/watch-state.json
