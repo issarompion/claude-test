@@ -1,0 +1,58 @@
+# Local Configuration (CLAUDE.local.md)
+
+This file contains instructions specific to your local environment.
+Copy this file to `CLAUDE.local.md` and customize it.
+
+## Development Environment
+
+### Environment Variables
+- DATABASE_URL: [your local DB connection]
+- API_KEY: [your dev API key]
+
+### Ports Used
+- Frontend: http://localhost:3000
+- Backend: http://localhost:8080
+- Database: localhost:5432
+
+## Personal Preferences
+
+### Code Style
+- I prefer arrow functions
+- I use tabs / spaces (2/4)
+- I prefer async/await over Promises
+
+### Local Tools
+- Editor: VS Code / Vim / WebStorm
+- Terminal: iTerm2 / Terminal / Windows Terminal
+- Node version: v20.x
+
+## Additional Context
+
+### Tasks in Progress
+- [ ] Feature X under development on branch feature/x
+- [ ] Bug Y to investigate
+
+### Important Notes
+- Service Z is sometimes unstable locally
+- Use `npm run dev:mock` to avoid real API calls
+
+## Frequent Local Commands
+
+```bash
+# Start the entire environment
+docker-compose up -d
+
+# Real-time logs
+docker-compose logs -f
+
+# Reset the local DB
+npm run db:reset
+
+# Seed with test data
+npm run db:seed
+```
+
+## Do Not Do on This Machine
+
+- IMPORTANT: Do not run load tests
+- IMPORTANT: Do not modify files in /config/prod/
