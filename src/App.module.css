@@ -1,0 +1,7 @@
+.cardSection {
+  display: flex;
+  justify-content: center;
+  padding: 4rem 1rem;
+  background-color: #f8fafc;
+  box-sizing: border-box;
+}
