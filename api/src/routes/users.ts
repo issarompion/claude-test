@@ -12,9 +12,13 @@ function validate(body: Partial<Omit<User, 'id'>>): string[] {
   const errors: string[] = [];
   if (!body.name || body.name.trim() === '') {
     errors.push('name is required');
+  } else if (body.name.length > 100) {
+    errors.push('name must be 100 characters or fewer');
   }
   if (!body.email || !EMAIL_RE.test(body.email)) {
     errors.push('email must be a valid email address');
+  } else if (body.email.length > 254) {
+    errors.push('email must be 254 characters or fewer');
   }
   if (!body.status || !VALID_STATUSES.includes(body.status)) {
     errors.push(`status must be one of: ${VALID_STATUSES.join(', ')}`);

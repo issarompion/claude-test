@@ -12,7 +12,12 @@ export function getById(id: string): User | undefined {
 }
 
 export function create(data: Omit<User, 'id'>): User {
-  const user: User = { id: randomUUID(), ...data };
+  const user: User = {
+    id: randomUUID(),
+    name: data.name,
+    email: data.email,
+    status: data.status,
+  };
   store.set(user.id, user);
   return user;
 }
@@ -20,7 +25,12 @@ export function create(data: Omit<User, 'id'>): User {
 export function update(id: string, data: Partial<Omit<User, 'id'>>): User | undefined {
   const existing = store.get(id);
   if (!existing) return undefined;
-  const updated: User = { ...existing, ...data };
+  const updated: User = {
+    id: existing.id,
+    name: data.name ?? existing.name,
+    email: data.email ?? existing.email,
+    status: data.status ?? existing.status,
+  };
   store.set(id, updated);
   return updated;
 }

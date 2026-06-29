@@ -212,3 +212,75 @@ describe('DELETE /users/:id', () => {
     expect(res.status).toBe(404);
   });
 });
+
+// ── Security ──────────────────────────────────────────────────────────────────
+
+describe('Security', () => {
+  it('POST /users ignores id in body and assigns its own UUID', async () => {
+    const res = await request.post('/users').send({
+      id: 'attacker-chosen-id',
+      name: 'Alice',
+      email: 'alice@example.com',
+      status: 'online',
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.id).not.toBe('attacker-chosen-id');
+    expect(res.body.id).toMatch(/^[0-9a-f-]{36}$/); // UUID format
+  });
+
+  it('POST /users strips unknown extra fields from the stored user', async () => {
+    const res = await request.post('/users').send({
+      name: 'Alice',
+      email: 'alice@example.com',
+      status: 'online',
+      role: 'admin',
+      isAdmin: true,
+    });
+    expect(res.status).toBe(201);
+    expect(res.body).not.toHaveProperty('role');
+    expect(res.body).not.toHaveProperty('isAdmin');
+  });
+
+  it('PUT /users/:id strips unknown extra fields from the updated user', async () => {
+    const created = await request.post('/users').send({ name: 'Alice', email: 'alice@example.com', status: 'online' });
+    const res = await request.put(`/users/${created.body.id}`).send({ status: 'offline', role: 'admin' });
+    expect(res.status).toBe(200);
+    expect(res.body).not.toHaveProperty('role');
+  });
+
+  it('returns 400 when name exceeds 100 characters', async () => {
+    const res = await request.post('/users').send({
+      name: 'A'.repeat(101),
+      email: 'alice@example.com',
+      status: 'online',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.errors).toBeDefined();
+  });
+
+  it('returns 400 when email exceeds 254 characters', async () => {
+    const longEmail = `${'a'.repeat(249)}@x.com`; // 249 + 6 = 255 chars > 254
+    const res = await request.post('/users').send({ name: 'Alice', email: longEmail, status: 'online' });
+    expect(res.status).toBe(400);
+    expect(res.body.errors).toBeDefined();
+  });
+
+  it('returns 413 when request body exceeds 16kb', async () => {
+    const res = await request
+      .post('/users')
+      .set('Content-Type', 'application/json')
+      .send(JSON.stringify({ name: 'A'.repeat(20000), email: 'a@b.com', status: 'online' }));
+    expect(res.status).toBe(413);
+  });
+
+  it('response does not include X-Powered-By header', async () => {
+    const res = await request.get('/health');
+    expect(res.headers['x-powered-by']).toBeUndefined();
+  });
+
+  it('response includes security headers from helmet', async () => {
+    const res = await request.get('/health');
+    expect(res.headers['x-content-type-options']).toBeDefined();
+    expect(res.headers['x-frame-options']).toBeDefined();
+  });
+});
