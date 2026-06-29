@@ -1,5 +1,35 @@
 {
   "version": "5.0.0",
-  "preset": null,
-  "modules": []
+  "preset": "nextjs",
+  "modules": [
+    "api-data",
+    "frontend",
+    "nextjs"
+  ],
+  "recommendations": [
+    {
+      "id": "apollographql/skills",
+      "pinnedRef": "v1.2.5"
+    },
+    {
+      "id": "frontend-design@claude-plugins-official",
+      "pinnedRef": "0bd954331e2dbf76024ac53b0fd997314f653e51"
+    },
+    {
+      "id": "prisma/skills",
+      "pinnedRef": "12b5fe7169c328693f2cc7e58669ce30b62665b8"
+    },
+    {
+      "id": "shadcn-ui/ui (skills/shadcn)",
+      "pinnedRef": "shadcn@4.11.0"
+    },
+    {
+      "id": "supabase/agent-skills",
+      "pinnedRef": "v0.1.5"
+    },
+    {
+      "id": "vercel-labs/agent-skills",
+      "pinnedRef": "f8a72b9603728bb92a217a879b7e62e43ad76c81"
+    }
+  ]
 }

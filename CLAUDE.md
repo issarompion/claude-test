@@ -102,3 +102,6 @@ Manual workflow: `/work:work-explore` → (`/work:work-brainstorm`) → `/work:w
 - any everywhere in TypeScript
 - **Not giving Claude a way to verify**
 - **Vague prompts without context or examples**
+
+## Design Direction
+Style: editorial
