@@ -1,0 +1,144 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least-privilege default for the GITHUB_TOKEN
+permissions:
+  contents: read
+
+jobs:
+  # Detect which paths a PR touches, so we can skip the macOS column on
+  # doc-only changes. macOS still runs unconditionally on push to main and
+  # develop, so any merge that bypassed PR review is still verified.
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      shell: ${{ steps.filter.outputs.shell }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            shell:
+              - 'scripts/**'
+              - 'tests/**'
+              - '.github/workflows/**'
+              - 'VERSION'
+              - '.claude/settings.json'
+              - '.claude/presets/**'
+
+  # Non-Bats checks: lint + documentation-count consistency. These run ONCE
+  # (the Bats suite is sharded into its own parallel matrix below), so the slow
+  # part — the Node/Docusaurus counts gate — is no longer duplicated per test
+  # batch. Fast job (~1-2 min); runs in parallel with the bats shards.
+  lint-and-counts:
+    name: Lint & Counts (ubuntu-latest)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # v2.0.0
+        with:
+          scandir: './scripts'
+          severity: warning
+
+      - name: Validate documentation counts
+        run: bash scripts/validate-counts.sh
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: website/package.json
+
+      - name: Install website dependencies
+        # No committed lockfile (website/package-lock.json is gitignored — it is
+        # a Docusaurus build-time tree, never shipped; keeping it out of the repo
+        # removes a recurring class of Dependabot alerts). `npm install` resolves
+        # current (patched) transitive versions at build time.
+        run: npm --prefix website install
+
+      - name: Counts gate (regenerate counts.json + injector + git diff)
+        run: |
+          npm --prefix website run generate
+          if ! git diff --exit-code -- counts.json README.md CLAUDE.md docs/ website/docs/ website/sidebars.ts website/docusaurus.config.ts website/src/; then
+            echo "::error::counts.json or its consumers are out of sync. Run 'npm --prefix website run generate' locally and commit the result."
+            exit 1
+          fi
+
+  # Bats suite, sharded across parallel runners. Each shard runs a balanced
+  # subset (scripts/test.sh --shard I/N, weighted by file line count) and still
+  # parallelizes within itself via bats --jobs. N is `strategy.job-total`, so it
+  # auto-syncs with the matrix array — bump the array to add/remove shards.
+  # This is the main CI-time lever: the single-runner suite (~6-7 min) drops to
+  # the slowest shard (~2 min) since the shards run concurrently.
+  bats:
+    name: Bats (ubuntu-latest)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Bats
+        uses: bats-core/bats-action@4.0.0
+
+      - name: Run Bats tests (shard ${{ matrix.shard }}/${{ strategy.job-total }})
+        # ./scripts/test.sh runs bats with --jobs (GNU parallel, capped at 8) —
+        # ~4x faster than serial; falls back to serial if parallel is absent.
+        run: ./scripts/test.sh --shard ${{ matrix.shard }}/${{ strategy.job-total }}
+
+  # macOS portability check — BSD utilities (sed, awk, date, grep, base64, wc)
+  # differ from GNU on Ubuntu. This column verifies ONLY what is portability-
+  # sensitive: the bash test suite and the bash count-validator running under
+  # macOS's toolchain. ShellCheck (same binary everywhere), the Node/docusaurus
+  # counts gate and `npm ci` are platform-independent and already covered by the
+  # ubuntu column, so they are intentionally omitted here — that npm install +
+  # site generation was the slow part of this job and tested nothing macOS-
+  # specific. Runs on every push to main/develop and on PRs touching shell paths
+  # (skipped on doc-only PRs). `continue-on-error: true` → never blocks a merge.
+  lint-and-test-macos:
+    name: Lint & Test (macos-latest)
+    runs-on: macos-latest
+    needs: changes
+    if: github.event_name == 'push' || needs.changes.outputs.shell == 'true'
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Bats, Bash 5+, GNU grep (macOS via Homebrew)
+        # macOS ships bash 3.2 (Apple froze updates since GPLv3 in 2007) and
+        # BSD grep (different ERE behavior than GNU grep). Homebrew installs:
+        #   bash 5+        at /opt/homebrew/bin/bash
+        #   GNU grep       at /opt/homebrew/opt/grep/libexec/gnubin/grep
+        # PATH is updated below to put GNU grep ahead of BSD grep.
+        run: |
+          brew install bats-core bash grep parallel
+          # Put GNU grep ahead of BSD grep in PATH for subsequent steps
+          echo "/opt/homebrew/opt/grep/libexec/gnubin" >> "$GITHUB_PATH"
+
+      - name: Run Bats tests
+        # ./scripts/test.sh runs bats with --jobs (GNU parallel, capped at 8) —
+        # ~4x faster than serial; falls back to serial if parallel is absent.
+        run: ./scripts/test.sh
+
+      - name: Validate documentation counts (bash portability)
+        run: bash scripts/validate-counts.sh
