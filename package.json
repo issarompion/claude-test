@@ -11,7 +11,12 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:ci": "vitest run --coverage --reporter=verbose",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "api:dev": "npm --prefix api run dev",
+    "api:test": "npm --prefix api test",
+    "api:typecheck": "npm --prefix api run typecheck",
+    "dev:all": "concurrently --names \"front,api\" --prefix-colors \"cyan,green\" \"npm run dev\" \"npm run api:dev\"",
+    "test:all": "npm test && npm run api:test"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -25,6 +30,7 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "@vitest/coverage-v8": "^2.0.5",
+    "concurrently": "^10.0.3",
     "jsdom": "^24.1.1",
     "typescript": "^5.5.3",
     "vite": "^5.3.4",

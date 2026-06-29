@@ -16,6 +16,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test-setup.ts'],
+    exclude: ['**/node_modules/**', '**/dist/**', 'api/**'],
     coverage: {
       provider: 'v8',
       exclude: ['src/main.tsx', 'src/test-setup.ts', 'src/vite-env.d.ts', 'vite.config.ts', 'dist/**'],
